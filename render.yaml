@@ -1,0 +1,37 @@
+services:
+  # Backend API Service
+  - type: web
+    name: isl-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    region: oregon
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MODEL_PATH
+        value: models/isl_model.h5
+      - key: PYTHON_ENV
+        value: production
+    autoDeploy: true
+
+  # Frontend Web Service  
+  - type: web
+    name: isl-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          name: isl-backend
+          type: web
+          property: host
